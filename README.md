@@ -36,39 +36,39 @@ Install the requirements and set up your AWS account:
  * Tell the scripts to load `default.profile`. You can create multiple profile
    files if you want to launch multiple EC2 instances.
 
-       export PROFILE=default 
+        export PROFILE=default 
 
  * Bootstrap all required AWS resources.
 
-       ./bootstrap.sh
+        ./bootstrap.sh
 
  * Start a new EC2 instance. Note: After your instance state reached `running`,
    you may have to wait about 2-3 minutes for it to boot until it's accessible.
    Use `status.sh` continuously to check if the instance is ready to use.
 
-       ./runInstance.sh
+        ./runInstance.sh
 
  * Show the status of the EC2 instance, instance uptime, instance IP and your current IP.
 
-       ./status.sh
+        ./status.sh
 
  * Goodie: ssh into the EC2 instance.
 
-       ./ssh.sh
+        ./ssh.sh
 
  * Setup macOS VPN configuration with `macosvpn`.
 
-       ./setupVPN.sh
+        ./setupVPN.sh
     
  * Connect to the vpn and watch netflix ...
 
  * Terminate the instance.
 
-       ./terminateInstance.sh
+        ./terminateInstance.sh
 
  * Cleanup all previously created AWS resources associated with this profile.
 
-       ./cleanup.sh
+        ./cleanup.sh
 
 # Credits
 

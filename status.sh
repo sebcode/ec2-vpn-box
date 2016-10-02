@@ -1,24 +1,35 @@
 #!/bin/bash
+source $(dirname $0)/lib/script-init.sh
 
-set -e
+if [ ! -f $PDIR/PUBLICIP ]; then
+    echo "Instance not started"
+    exit 1
+fi
 
-source config.sh
+if [ ! -f $PDIR/INSTANCEID ]; then
+    echo "Instance not started"
+    exit 1
+fi
 
-OUTPUT_FILE=/tmp/output
+PUBLICIP=$(cat $PDIR/PUBLICIP)
+INSTANCEID=$(cat $PDIR/INSTANCEID)
 
-test "$RUNNING_INSTANCE_ID" = "" && {
-  echo "Box is not running." >&2
-  exit 1;
-}
+aws ec2 describe-instances --instance-ids $INSTANCEID > $PDIR/describe-instance ; test ${PIPESTATUS[0]} -eq 0
+STATE=$(cat $PDIR/describe-instance | jq -r ".Reservations[0].Instances[0].State.Name")
+echo "Instance state is '$STATE'"
 
-$AWS ec2 describe-instances \
-  --instance-id $RUNNING_INSTANCE_ID \
-  --region $REGION \
-  > $OUTPUT_FILE
+if [ "$STATE" = "running" ]; then
+    ./ssh.sh uptime
+fi
 
-STATE=$(cat $OUTPUT_FILE | jq -r ".Reservations[0].Instances[0].State.Name")
-PUBLIC_IP=$(cat $OUTPUT_FILE | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
+curl --silent http://freegeoip.net/json/ > $PDIR/geoinfo ; test ${PIPESTATUS[0]} -eq 0
+cat $PDIR/geoinfo | jq .
 
-echo "State: $STATE"
-echo "ssh -i $KEY_FILE ubuntu@$PUBLIC_IP"
+CURRENTIP=$(cat $PDIR/geoinfo | jq -r '.ip')
+
+if [ "$CURRENTIP" = "$PUBLICIP" ]; then
+    echo "You are connected!"
+else
+    echo "You are not connected :("
+fi
 

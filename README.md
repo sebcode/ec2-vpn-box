@@ -1,96 +1,76 @@
-
 # ec2-vpn-box
 
-Here are some helper scripts for an EC2-based on-demand ipsec VPN instance.
+Bash scripts to bootstrap a personal IPsec VPN connection via AWS EC2.
 
-The `start.sh` script will launch an EC2 nano instance with Ubuntu and a ready to use VPN.
+The scripts sets up all required AWS resources (Keypair, VPC, Security Group,
+Subnet, Internet Gateway, Routes) for you and there is also a cleanup script
+to delete all resources when you are done using it. The created AWS resources
+do not interfere with your existing resources (as far as I know, so use at your
+own risk).
 
-If you don't need the instance any more, use `terminate.sh` to terminate it.
+The bootstrapped EC2 instance is a nano instance with Ubuntu 16.04 and
+strongswan. UDP ports 4500 and 500 are open (for IPsec VPN) as well as
+SSH port 22.
 
-The EC2 instance will be set up with ipsec VPN and update a no-ip.org hostname.
+## Requirements
 
-This script has been tested with Bash 4.3.42 on Mac OS X 10.11. Should work
-for other configurations too.
+ * macOS (tested with Sierra, but probably works also with Yosemite/El Capitan)
+ * `brew install aws jq macosvpn`
+ * Amazon AWS account with root credentials
 
 ## Initial setup
 
- * Set up your AWS account:
+Install the requirements and set up your AWS account:
 
-      * Log in to AWS Console with your root or administrator user account.
-      * Create a separate IAM user with `AmazonEC2FullAccess` policy
-        (a bit more restricted policy works probably too).
-      * Create an access key for this user and save it somewhere.
-      * Make sure your have a Public Subnet and a Internet Gateway in your VPC
-        configuration. See
-        [VPC Secenario 1 in Amazon VPC documentation](http://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/VPC_Scenario1.html)
-        for more information. If you have an older AWS account you probably
-        need to create them manually.
-      * In EC2 Dashboard, go to "Key Pairs" and create a key pair named `ec2vpnbox`.
-        With this key pair you can access your instance with SSH.
-        Creating a key pair will trigger the download of a PEM file.
-
- * Copy the key pair file somewhere and change the permissions.
-
-        mkdir -p ~/.ec2/
-        mv ~/Downloads/ec2vpnbox.pem ~/.ec2/
-        chmod 600 ~/.ec2/ec2vpnbox.pem
-
- * Install dependencies. You need the AWS Commandline tools and jq for the scripts to work.
-   jq is a really cool JSON parser that the scripts use to parse awscli's JSON output.
-   If you use Mac OS X and homebrew do this:
-
-        brew install awscli jq
-
+ * Log in to AWS Console with your root or administrator user account.
+ * Create a separate IAM user with `AmazonEC2FullAccess` policy
+   (a bit more restricted policy works probably too).
  * Create a new AWS credentials profile for the IAM user you created previously:
 
         aws configure --profile ec2vpnbox
 
- * Edit configuration.
+ * Edit `default.profile` file and change the region you want to connect to.
 
-      * First, find out your subnet ID. If you only have one VPC subnet, use this to find it out:
+## Usage
 
-            aws --profile seb ec2 describe-subnets --region eu-west-1 | jq -r '.Subnets[0].SubnetId'
+ * Tell the scripts to load `default.profile`. You can create multiple profile
+   files if you want to launch multiple EC2 instances.
 
-      * Copy the sample configuration file and edit it with your favorite text editor.
+       export PROFILE=default 
 
-            cp config.sample.sh config.sh
-            vim config.sh
+ * Bootstrap all required AWS resources.
 
-      * You probably want to edit at least:
+       ./bootstrap.sh
 
-        * `SUBNET_ID`
-        * `REGION`
-        * `PSK`, `VPN_USER`, `VPN_PASSWORD`
-        * `NOIP_USER`, `NOIP_PASS`, `NOIP_HOST`
+ * Start a new EC2 instance. Note: After your instance state reached `running`,
+   you may have to wait about 2-3 minutes for it to boot until it's accessible.
+   Use `status.sh` continuously to check if the instance is ready to use.
 
- * Start your VPN box:
+       ./runInstance.sh
 
-        ./start.sh
+ * Show the status of the EC2 instance, instance uptime, instance IP and your current IP.
 
- * Show status:
+       ./status.sh
 
-        ./status.sh
+ * Goodie: ssh into the EC2 instance.
 
- * Terminate your VPN box:
+       ./ssh.sh
 
-        ./terminate.sh
+ * Setup macOS VPN configuration with `macosvpn`.
 
-### VPN Client configuration on Mac OS X
+       ./setupVPN.sh
+    
+ * Connect to the vpn and watch netflix ...
 
- * Go to "System Preferences" -> "Network"
+ * Terminate the instance.
 
- * Add a new network interface
+       ./terminateInstance.sh
 
-   * Interface: VPN
-   * VPN Type: L2TP over IPSec
-   * Service name: ec2vpnbox
+ * Cleanup all previously created AWS resources associated with this profile.
 
- * Set "Server Address" to your dynamic DNS Hostname.
+       ./cleanup.sh
 
- * Go to "Authentication Settings..."
+# Credits
 
-   * Set "User Authentication" -> "Password" to your VPN password
-   * Set "Machine Authentication" -> "Shared Secret" to your shared secret (`PSK`)
-
- * Click "Connect"
+Sebastian Volland - http://github.com/sebcode
 

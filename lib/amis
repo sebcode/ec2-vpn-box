@@ -1,9 +1,13 @@
 # These are the Ubuntu 16.04 amis for the different regions.
+# https://cloud-images.ubuntu.com/locator/ec2/
 #
 us-east-1=ami-ddf13fb0
+us-east-2=ami-d1cb91b4
 us-west-2=ami-b9ff39d9
 us-west-1=ami-b20542d2
+ca-central-1=ami-3d299b59
 eu-west-1=ami-a4d44ed7
+eu-west-2=ami-57eae033
 eu-central-1=ami-26e70c49
 ap-southeast-1=ami-fc37e59f
 ap-northeast-1=ami-b7d829d6

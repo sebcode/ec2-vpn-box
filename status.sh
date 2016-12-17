@@ -19,6 +19,8 @@ STATE=$(cat $PDIR/describe-instance | jq -r ".Reservations[0].Instances[0].State
 echo "Instance state is '$STATE'"
 
 if [ "$STATE" = "running" ]; then
+    echo "Public IP: $PUBLICIP"
+    echo "Instance ID: $INSTANCEID"
     ./ssh.sh uptime
 fi
 

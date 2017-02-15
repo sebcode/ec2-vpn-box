@@ -43,6 +43,12 @@ fi
 
 echo "Starting instance with type $INSTANCETYPE in region $AWS_DEFAULT_REGION with AMI $AMI"
 
+# Ask for password to update /etc/hosts right at the beginning.
+echo "May ask for sudo password to allow modification of /etc/hosts."
+sudo ls > /dev/null
+
+START_TIME=$(date)
+
 VPN_PASS=$(pwgen -n 10 1)
 VPN_PSK=$(pwgen -n 10 1)
 
@@ -55,6 +61,13 @@ echo "VPN_USER=vpnuser" >> $BOOTFILE
 echo "VPN_PASS=$VPN_PASS" >> $BOOTFILE
 echo "VPN_PSK=$VPN_PSK" >> $BOOTFILE
 cat lib/server-bootstrap >> $BOOTFILE
+
+EXTRA=$(dirname $0)/server-bootstrap-extra
+if [ -f "$EXTRA" ]; then
+    cat $EXTRA >> $BOOTFILE
+fi
+
+echo 'echo -n 1 > /tmp/.boot_done' >> $BOOTFILE
 
 echo $VPN_PASS > $PDIR/VPN_PASS
 echo $VPN_PSK > $PDIR/VPN_PSK
@@ -85,13 +98,58 @@ while [ ! "$STATE" = "running" ]; do
     COUNTER=$((COUNTER+1))
     if [ $COUNTER -gt 30 ]; then
         echo "Timeout"
-        break
+        exit 1
     fi
 done
 
 PUBLICIP=$(cat $PDIR/describe-instance | jq -r ".Reservations[0].Instances[0].PublicIpAddress")
-echo $PUBLICIP > $PDIR/PUBLICIP
+echo -n $PUBLICIP > $PDIR/PUBLICIP
 
 echo "Instance is available: $INSTANCEID"
 echo "Public IP: $PUBLICIP"
+
+echo Update /etc/hosts
+$(dirname $0)/updateetchosts.sh
+
+COUNTER=1
+while true; do
+    echo "Waiting for SSH port to be reachable"
+    set +e
+    nc -G 2 -zv $PUBLICIP 22
+    if [ "$?" = "0" ]; then
+        break
+    fi
+    sleep 1
+    set -e
+
+    COUNTER=$((COUNTER+1))
+    if [ $COUNTER -gt 60 ]; then
+        echo "Timeout"
+        exit 1
+    fi
+done
+
+# Remove possible old key entry from SSH known hosts file.
+ssh-keygen -R $LOCALHOSTNAME
+
+COUNTER=1
+while true; do
+    echo "Waiting for instance to boot"
+
+    SSH=$(dirname $0)/ssh.sh
+    if [ "$($SSH cat /tmp/.boot_done)" = "1" ]; then
+        break;
+    fi
+    sleep 1
+
+    COUNTER=$((COUNTER+1))
+    if [ $COUNTER -gt 60 ]; then
+        echo "Timeout"
+        exit 1
+    fi
+done
+
+echo "Start: $START_TIME"
+echo "Now:   $(date)"
+echo Done.
 

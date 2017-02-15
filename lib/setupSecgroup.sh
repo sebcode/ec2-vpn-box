@@ -15,27 +15,33 @@ SECGROUPID=$(cat $PDIR/describe-security-group | jq -r '.SecurityGroups[0].Group
 echo $SECGROUPID > $PDIR/SECGROUPID
 echo "Security group for VPC $VPCID is: $SECGROUPID"
 
-HASSSHRULE=$(cat $PDIR/describe-security-group \
-    | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
-    | jq -r 'select(. | contains("22,22,tcp,0.0.0.0/0")) != ""')
+if [ ! "$INGRESS_TCP_PORTS" = "" ]; then do
+    for PORT in "$INGRESS_TCP_PORTS"; do
+        HASRULE=$(cat $PDIR/describe-security-group \
+            | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
+            | jq -r "select(. | contains(\"$PORT,$PORT,tcp,0.0.0.0/0\")) != \"\"")
 
-if [ "$HASSSHRULE" = "true" ]; then
-    echo "Ingress rule for SSH already exists"
-else
-    echo "Create ingress rule for SSH"
-    aws ec2 authorize-security-group-ingress --group-id $SECGROUPID --protocol tcp --port 22 --cidr 0.0.0.0/0 ; test ${PIPESTATUS[0]} -eq 0
+        if [ "$HASRULE" = "true" ]; then
+            echo "Ingress rule for TCP port $PORT already exists"
+        else
+            echo "Create ingress rule for TCP port $PORT"
+            aws ec2 authorize-security-group-ingress --group-id $SECGROUPID --protocol tcp --port $PORT --cidr 0.0.0.0/0 ; test ${PIPESTATUS[0]} -eq 0
+        fi
+    done
 fi
 
-for PORT in 500 4500; do
-    HASRULE=$(cat $PDIR/describe-security-group \
-        | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
-        | jq -r "select(. | contains(\"$PORT,$PORT,udp,0.0.0.0/0\")) != \"\"")
+if [ ! "$INGRESS_UDP_PORTS" = "" ]; then do
+    for PORT in "$INGRESS_UDP_PORTS"; do
+        HASRULE=$(cat $PDIR/describe-security-group \
+            | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
+            | jq -r "select(. | contains(\"$PORT,$PORT,udp,0.0.0.0/0\")) != \"\"")
 
-    if [ "$HASRULE" = "true" ]; then
-        echo "Ingress rule for UDP port $PORT already exists"
-    else
-        echo "Create ingress rule for UDP port $PORT"
-        aws ec2 authorize-security-group-ingress --group-id $SECGROUPID --protocol udp --port $PORT --cidr 0.0.0.0/0 ; test ${PIPESTATUS[0]} -eq 0
-    fi
-done
+        if [ "$HASRULE" = "true" ]; then
+            echo "Ingress rule for UDP port $PORT already exists"
+        else
+            echo "Create ingress rule for UDP port $PORT"
+            aws ec2 authorize-security-group-ingress --group-id $SECGROUPID --protocol udp --port $PORT --cidr 0.0.0.0/0 ; test ${PIPESTATUS[0]} -eq 0
+        fi
+    done
+fi
 

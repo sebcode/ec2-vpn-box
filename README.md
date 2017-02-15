@@ -10,7 +10,7 @@ own risk).
 
 The bootstrapped EC2 instance is a nano instance with Ubuntu 16.04 and
 strongswan. UDP ports 4500 and 500 are open (for IPsec VPN) as well as
-SSH port 22.
+SSH port 22 (ports are configurable).
 
 ## Requirements
 
@@ -29,7 +29,10 @@ Install the requirements and set up your AWS account:
 
         aws configure --profile ec2vpnbox
 
+ * `cp default.profile.sample default.profile`
  * Edit `default.profile` file and change the region you want to connect to.
+ * mkdir ~/.ssh/config.d
+ * Add this to ~/.ssh/config: "Include config.d/*"
 
 ## Usage
 

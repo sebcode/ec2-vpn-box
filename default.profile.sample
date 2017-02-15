@@ -19,9 +19,19 @@ export AWS_DEFAULT_PROFILE="ec2vpnbox"
 # ap-south-1 - Asia Pacific (Mumbai)
 # sa-east-1 - South America (São Paulo)
 #
-export AWS_DEFAULT_REGION="us-east-1"
+export AWS_DEFAULT_REGION="eu-west-1"
 
 # Type of the EC2 instance. The nano instance is the smallest and cheapest one,
 # and should probably be good enough for a personal VPN.
 export INSTANCETYPE="t2.nano"
+
+# List of ingress TCP ports to allow in security group (firewall).
+export INGRESS_TCP_PORTS="22"
+
+# List of ingress UDP ports to allow in security group (firewall).
+# Ports 500 and 4500 are required for IPsec VPN.
+export INGRESS_UDP_PORTS="500 4500"
+
+# Local hostname to add to /etc/hosts pointing to the public IP.
+export LOCALHOSTNAME="ec2box"
 

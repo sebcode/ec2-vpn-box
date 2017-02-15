@@ -13,5 +13,12 @@ if [ ! -f $PDIR/prikey ]; then
     exit 1
 fi
 
-ssh -p 22 -i $PDIR/prikey "ubuntu@$PUBLICIP" $*
+ETCHOSTSIP="$(cat /etc/hosts | grep $LOCALHOSTNAME | awk '{ print $1 }')"
+
+if [ "$ETCHOSTSIP" != "$PUBLICIP" ]; then
+    echo "Update of /etc/hosts required."
+    $(dirname $0)/updateetchosts.sh
+fi
+
+ssh -o ConnectTimeout=2 -i $PDIR/prikey "ubuntu@$LOCALHOSTNAME" $*
 

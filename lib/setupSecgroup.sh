@@ -15,8 +15,8 @@ SECGROUPID=$(cat $PDIR/describe-security-group | jq -r '.SecurityGroups[0].Group
 echo $SECGROUPID > $PDIR/SECGROUPID
 echo "Security group for VPC $VPCID is: $SECGROUPID"
 
-if [ ! "$INGRESS_TCP_PORTS" = "" ]; then do
-    for PORT in "$INGRESS_TCP_PORTS"; do
+if [ ! "$INGRESS_TCP_PORTS" = "" ]; then
+    for PORT in $INGRESS_TCP_PORTS; do
         HASRULE=$(cat $PDIR/describe-security-group \
             | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
             | jq -r "select(. | contains(\"$PORT,$PORT,tcp,0.0.0.0/0\")) != \"\"")
@@ -30,8 +30,8 @@ if [ ! "$INGRESS_TCP_PORTS" = "" ]; then do
     done
 fi
 
-if [ ! "$INGRESS_UDP_PORTS" = "" ]; then do
-    for PORT in "$INGRESS_UDP_PORTS"; do
+if [ ! "$INGRESS_UDP_PORTS" = "" ]; then
+    for PORT in $INGRESS_UDP_PORTS; do
         HASRULE=$(cat $PDIR/describe-security-group \
             | jq '.SecurityGroups[0].IpPermissions[] | (.FromPort|tostring) + "," + (.ToPort|tostring) + "," + (.IpProtocol|tostring) + "," + (.IpRanges[0].CidrIp)' \
             | jq -r "select(. | contains(\"$PORT,$PORT,udp,0.0.0.0/0\")) != \"\"")
